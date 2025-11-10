@@ -32,11 +32,8 @@ def generate_subtitles(input_video):
 def convert_to_vertical(input_file, output_file):
     subprocess.run([
         "ffmpeg", "-y", "-i", input_file,
-        "-vf", 
-        (
-            "scale=iw*2:ih*2,"           # Zoom in 150%
-            "crop=1080:1920:(in_w-1080)/2:(in_h-1920)/2"  # Crop center for 9:16
-        ),
+        "-vf",
+        "scale=2304:1296,pad=2304:1920:(ow-iw)/2:(oh-ih)/2:black,crop=1080:1920:(in_w-1080)/2:(in_h-1920)/2",
         "-c:a", "copy", output_file
     ])
 
