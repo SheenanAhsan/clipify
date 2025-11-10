@@ -14,7 +14,6 @@ pip install openai-whisper torch moviepy ffmpeg-python
 
 ### every other time
 ```
-python3 -m venv venv
 source venv/bin/activate
 ```
 
