@@ -1,0 +1,10 @@
+# ignore video and audio files 
+# used for testing
+*.mp4
+*.mp3
+*.srt
+
+# ignore virtual enviroment
+venv/
+
+.DS_Store
