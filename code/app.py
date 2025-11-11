@@ -13,14 +13,14 @@ def format_timestamp(seconds):
     return f"{h:02d}:{m:02d}:{s:02d},{ms:03d}"
 
 # === Step 1: Trim video ===
-def trim_video(input_file, start_time, end_time, output_file):
-    subprocess.run([
-        "ffmpeg", "-y",
-        "-i", input_file,
-        "-ss", start_time,  # switch between -ss and -i to find what works
-        "-to", end_time,
-        "-c", "copy", output_file
-    ])
+# def trim_video(input_file, start_time, end_time, output_file):
+#     subprocess.run([
+#         "ffmpeg", "-y",
+#         "-i", input_file,
+#         "-ss", start_time,  # switch between -ss and -i to find what works
+#         "-to", end_time,
+#         "-c", "copy", output_file
+#     ])
 
 
 # === Step 2: Generate subtitles using Faster-Whisper ===
@@ -39,7 +39,7 @@ def generate_subtitles(input_video, max_words=3):
             group = words[i:i+max_words]
             start = group[0].start
             end = group[-1].end
-            text = "".join([w.word for w in group])
+            text = "".join([w.word for w in group]).strip().lower()
             captions.append((start, end, text))
 
     # Write to SRT
@@ -74,7 +74,7 @@ def add_effects(input_video, subtitles, music, output_file):
         "ffmpeg", "-y",
         "-i", input_video,
         "-i", music,
-        "-vf", f"subtitles={subtitles}:force_style='Fontsize=12,PrimaryColour=&HFFFFFF&'",
+        "-vf", f"subtitles={subtitles}:force_style='Fontname=sans-serif,Fontsize=15,Bold=-1,Outline=1,OutlineColour=&H000000&,PrimaryColour=&HFFFFFF&,Alignment=2,MarginV=85'",
         "-filter_complex", "[0:a][1:a]amix=inputs=2:duration=shortest",
         "-c:v", "libx264", "-c:a", "aac",
         "-shortest", output_file
@@ -87,10 +87,10 @@ if __name__ == "__main__":
     vertical = "vertical.mp4"
     bg_music = "bg_music.mp3"
 
-    start_of_trim = "00:00:20"
-    end_of_trim = "00:00:40"
+    # start_of_trim = "00:00:20"
+    # end_of_trim = "00:00:40"
 
-    print("🎬 Trimming clip...")
+    #print("🎬 Trimming clip...")
     #trim_video(input_video, start_of_trim, end_of_trim, highlight)
 
     print("💬 Generating subtitles...")
