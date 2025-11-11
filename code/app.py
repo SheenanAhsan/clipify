@@ -41,7 +41,7 @@ def generate_subtitles(input_video, max_words=3):
             start = group[0].start
             end = group[-1].end
             text = "".join([w.word for w in group]).strip().lower()
-            text = re.sub(r"[^\w\s]", "", text)  # remove anything not a letter/number/space
+            text = re.sub(r"[^\w\s']", "", text)  # remove anything not a letter/number/space
             captions.append((start, end, text))
 
     # Write to SRT
