@@ -10,9 +10,7 @@ pip install faster-whisper ffmpeg-python srt
 ```
 
 ### every other time
-```
-source venv/bin/activate
-```
+`source venv/bin/activate`
 
 ### run app
 `python3 app.py`

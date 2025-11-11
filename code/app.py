@@ -15,8 +15,10 @@ def format_timestamp(seconds):
 # === Step 1: Trim video ===
 def trim_video(input_file, start_time, end_time, output_file):
     subprocess.run([
-        "ffmpeg", "-y", "-i", input_file,
-        "-ss", start_time, "-to", end_time,
+        "ffmpeg", "-y",
+        "-i", input_file,
+        "-ss", start_time,  # switch between -ss and -i to find what works
+        "-to", end_time,
         "-c", "copy", output_file
     ])
 
@@ -37,7 +39,7 @@ def generate_subtitles(input_video, max_words=3):
             group = words[i:i+max_words]
             start = group[0].start
             end = group[-1].end
-            text = " ".join([w.word for w in group])
+            text = "".join([w.word for w in group])
             captions.append((start, end, text))
 
     # Write to SRT
@@ -72,7 +74,7 @@ def add_effects(input_video, subtitles, music, output_file):
         "ffmpeg", "-y",
         "-i", input_video,
         "-i", music,
-        "-vf", f"subtitles={subtitles}:force_style='Fontsize=20,PrimaryColour=&HFFFFFF&'",
+        "-vf", f"subtitles={subtitles}:force_style='Fontsize=12,PrimaryColour=&HFFFFFF&'",
         "-filter_complex", "[0:a][1:a]amix=inputs=2:duration=shortest",
         "-c:v", "libx264", "-c:a", "aac",
         "-shortest", output_file
@@ -80,19 +82,24 @@ def add_effects(input_video, subtitles, music, output_file):
 
 # === Main pipeline ===
 if __name__ == "__main__":
-    input_video = "twitch_clip.mp4"
+    input_video = "sunset_ace.mp4"
+    highlight = "twitch_clip.mp4"
+    vertical = "vertical.mp4"
     bg_music = "bg_music.mp3"
 
+    start_of_trim = "00:00:20"
+    end_of_trim = "00:00:40"
+
     print("🎬 Trimming clip...")
-    trim_video(input_video, "00:00:07", "00:00:23", "highlight.mp4")
+    #trim_video(input_video, start_of_trim, end_of_trim, highlight)
 
     print("💬 Generating subtitles...")
-    generate_subtitles("highlight.mp4")
+    generate_subtitles(highlight)
 
     print("📱 Converting to vertical format...")
-    convert_to_vertical("highlight.mp4", "vertical.mp4")
+    convert_to_vertical(highlight, vertical)
 
     print("🎵 Adding subtitles and music...")
-    add_effects("vertical.mp4", "subs.srt", bg_music, "final_short.mp4")
+    add_effects(vertical, "subs.srt", bg_music, "final_short.mp4")
 
     print("\n✅ Done! Check your folder for 'final_short.mp4'")
