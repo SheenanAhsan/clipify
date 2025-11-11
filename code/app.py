@@ -3,6 +3,7 @@ import subprocess
 from faster_whisper import WhisperModel
 import srt
 from datetime import timedelta
+import re
 
 # === Helper: Convert timestamp format ===
 def format_timestamp(seconds):
@@ -40,6 +41,7 @@ def generate_subtitles(input_video, max_words=3):
             start = group[0].start
             end = group[-1].end
             text = "".join([w.word for w in group]).strip().lower()
+            text = re.sub(r"[^\w\s]", "", text)  # remove anything not a letter/number/space
             captions.append((start, end, text))
 
     # Write to SRT
@@ -75,7 +77,7 @@ def add_effects(input_video, subtitles, music, output_file):
         "-i", input_video,
         "-i", music,
         "-vf", f"subtitles={subtitles}:force_style='Fontname=sans-serif,Fontsize=15,Bold=-1,Outline=1,OutlineColour=&H000000&,PrimaryColour=&HFFFFFF&,Alignment=2,MarginV=85'",
-        "-filter_complex", "[0:a][1:a]amix=inputs=2:duration=shortest",
+        "-filter_complex", "[1:a]volume=0.3[a1];[0:a][a1]amix=inputs=2:duration=shortest",
         "-c:v", "libx264", "-c:a", "aac",
         "-shortest", output_file
     ])
