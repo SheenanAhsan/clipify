@@ -6,11 +6,8 @@
 python3 -m venv venv
 source venv/bin/activate
 pip install --upgrade pip
-pip install openai-whisper torch moviepy ffmpeg-python
+pip install faster-whisper ffmpeg-python srt
 ```
-
-### check if whisper is working
-`python -m whisper --help`
 
 ### every other time
 ```

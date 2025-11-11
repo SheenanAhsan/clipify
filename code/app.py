@@ -1,6 +1,8 @@
-import subprocess
-import whisper
 import os
+import subprocess
+from faster_whisper import WhisperModel
+import srt
+from datetime import timedelta
 
 # === Helper: Convert timestamp format ===
 def format_timestamp(seconds):
@@ -18,15 +20,42 @@ def trim_video(input_file, start_time, end_time, output_file):
         "-c", "copy", output_file
     ])
 
-# === Step 2: Generate subtitles using Whisper ===
-def generate_subtitles(input_video):
-    model = whisper.load_model("small")
-    result = model.transcribe(input_video)
-    with open("subs.srt", "w") as f:
-        for i, seg in enumerate(result["segments"], start=1):
-            f.write(f"{i}\n")
-            f.write(f"{format_timestamp(seg['start'])} --> {format_timestamp(seg['end'])}\n")
-            f.write(f"{seg['text'].strip()}\n\n")
+
+# === Step 2: Generate subtitles using Faster-Whisper ===
+def generate_subtitles(input_video, max_words=3):
+    output_srt="subs.srt"
+    model_size = "medium.en"
+    model = WhisperModel(model_size, device="cpu", compute_type="int8")
+    segments, _ = model.transcribe(input_video, word_timestamps=True, vad_filter=True)
+
+    captions = []
+    for seg in segments:
+        words = seg.words
+        if not words:
+            continue
+        for i in range(0, len(words), max_words):
+            group = words[i:i+max_words]
+            start = group[0].start
+            end = group[-1].end
+            text = " ".join([w.word for w in group])
+            captions.append((start, end, text))
+
+    # Write to SRT
+    subs = []
+    for i, (start, end, text) in enumerate(captions, 1):
+        subs.append(
+            srt.Subtitle(
+                index=i,
+                start=timedelta(seconds=start),
+                end=timedelta(seconds=end),
+                content=text.strip()
+            )
+        )
+
+    with open(output_srt, "w", encoding="utf-8") as f:
+        f.write(srt.compose(subs))
+
+    print(f"✅ Generated {len(subs)} short subtitles → {output_srt}")
 
 # === Step 3: Convert to vertical 9:16 ===
 def convert_to_vertical(input_file, output_file):
@@ -43,7 +72,7 @@ def add_effects(input_video, subtitles, music, output_file):
         "ffmpeg", "-y",
         "-i", input_video,
         "-i", music,
-        "-vf", f"subtitles={subtitles}:force_style='Fontsize=28,PrimaryColour=&HFFFFFF&'",
+        "-vf", f"subtitles={subtitles}:force_style='Fontsize=20,PrimaryColour=&HFFFFFF&'",
         "-filter_complex", "[0:a][1:a]amix=inputs=2:duration=shortest",
         "-c:v", "libx264", "-c:a", "aac",
         "-shortest", output_file
@@ -55,7 +84,7 @@ if __name__ == "__main__":
     bg_music = "bg_music.mp3"
 
     print("🎬 Trimming clip...")
-    trim_video(input_video, "00:00:05", "00:00:23", "highlight.mp4")
+    trim_video(input_video, "00:00:07", "00:00:23", "highlight.mp4")
 
     print("💬 Generating subtitles...")
     generate_subtitles("highlight.mp4")
