@@ -1,6 +1,5 @@
 ### to run locally, you need to run python in a virtual machine
 
-
 # run for first time
 ```
 python3 -m venv venv
