@@ -40,7 +40,7 @@ ScaledBorderAndShadow: yes
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, OutlineColour, Bold, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Default,Comfortaa,100,&H00FFFFFF,&H00000000,-1,1,4,0,2,50,50,200,1
+Style: Default,sans-serif,100,&H00FFFFFF,&H00000000,-1,1,4,0,2,50,50,500,1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
@@ -56,6 +56,10 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 
     # Build dialogue lines
     events = ""
+
+    fixed_up = 150   # ms bounce up
+    fixed_down = 110  # ms bounce down
+
     for seg in segments:
         for w in seg.words or []:
             start = w.start
@@ -67,12 +71,22 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 
             # Bounce effect using scaling over the first ~1/5 of the duration
             duration = max(0.001, end - start)
-            up = duration / 5
-            down = duration / 10
+            # up = duration / 5
+            # down = duration / 10
+            # ASS expects centiseconds (1/100 of a second)
+            up_cs = fixed_up / 10   # 100 ms = 10 cs
+            down_cs = (fixed_up + fixed_down) / 10  # add both parts for proper timing
 
+            # events += (
+            #     f"Dialogue: 0,{ass_time(start)},{ass_time(end)},Default,,0,0,0,,"
+            #     f"{{\\fscx60\\fscy60\\t(0,{int(up*1000)},\\fscx120\\fscy120)\\t({int(up*1000)},{int(down*1000)},\\fscx100\\fscy100)}}{text}\n"
+            # )
             events += (
                 f"Dialogue: 0,{ass_time(start)},{ass_time(end)},Default,,0,0,0,,"
-                f"{{\\fscx60\\fscy60\\t(0,{int(up*1000)},\\fscx120\\fscy120)\\t({int(up*1000)},{int(down*1000)},\\fscx100\\fscy100)}}{text}\n"
+                f"{{\\fscx80\\fscy80"
+                f"\\t(0,{up_cs},\\fscx120\\fscy120)"          # bounce up
+                f"\\t({up_cs},{down_cs},\\fscx100\\fscy100)"  # bounce down
+                f"}}{text}\n"
             )
 
     with open(output_ass, "w", encoding="utf-8") as f:
