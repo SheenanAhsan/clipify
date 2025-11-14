@@ -39,8 +39,8 @@ PlayResY: 1920
 ScaledBorderAndShadow: yes
 
 [V4+ Styles]
-Format: Name, Fontname, Fontsize, PrimaryColour, OutlineColour, Bold, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Default,sans-serif,100,&H00FFFFFF,&H00000000,-1,1,4,0,2,50,50,500,1
+Format: Name, Fontname, Fontsize, PrimaryColour, OutlineColour, Bold, BorderStyle, Outline, Shadow, Alignment, MarginV, Encoding
+Style: Default,impact,150,&H00FFFFFF,&H00000000,0,1,15,0,2,600,1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
@@ -65,7 +65,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
             start = w.start
             # end = min(w.end + 0.15, seg.end)  # keep short and tight
             end = min(w.end, seg.end)  # keep short and tight
-            text = re.sub(r'[^\w\s]', '', w.word.lower().strip())  # lowercase + remove punctuation
+            text = re.sub(r'[^\w\s]', '', w.word.upper().strip())  # lowercase + remove punctuation
             if not text:
                 continue
 
@@ -84,7 +84,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
             events += (
                 f"Dialogue: 0,{ass_time(start)},{ass_time(end)},Default,,0,0,0,,"
                 f"{{\\fscx80\\fscy80"
-                f"\\t(0,{up_cs},\\fscx120\\fscy120)"          # bounce up
+                f"\\t(0,{up_cs},\\fscx110\\fscy110)"          # bounce up
                 f"\\t({up_cs},{down_cs},\\fscx100\\fscy100)"  # bounce down
                 f"}}{text}\n"
             )
@@ -142,24 +142,37 @@ def convert_to_vertical(input_file, output_file):
     ])
 
 # === Step 4: Add subtitles & music ===
-def add_effects(input_video, subtitles, music, output_file):
-    subprocess.run([
-        "ffmpeg", "-y",
-        "-i", input_video,
-        "-i", music,
-        #"-vf", f"subtitles={subtitles}:force_style='Fontname=sans-serif,Fontsize=15,Bold=-1,Outline=1,OutlineColour=&H000000&,PrimaryColour=&HFFFFFF&,Alignment=2,MarginV=85'",
-        "-vf", f"ass={subtitles}",
-        "-filter_complex", "[1:a]volume=0.3[a1];[0:a][a1]amix=inputs=2:duration=shortest",
-        "-c:v", "libx264", "-c:a", "aac",
-        "-shortest", output_file
-    ])
+def add_effects(input_video, subtitles, music, output_file, subs_style):
+    if subs_style == "ass":
+        subprocess.run([
+            "ffmpeg", "-y",
+            "-i", input_video,
+            "-i", music,
+            "-vf", f"ass={subtitles}",
+            "-filter_complex", "[1:a]volume=0.3[a1];[0:a][a1]amix=inputs=2:duration=shortest",
+            "-c:v", "libx264", "-c:a", "aac",
+            "-shortest", output_file
+        ])
+    else:
+        subprocess.run([
+            "ffmpeg", "-y",
+            "-i", input_video,
+            "-i", music,    
+            "-vf", f"subtitles={subtitles}:force_style='Fontname=sans-serif,Fontsize=15,Bold=-1,Outline=2,OutlineColour=&H000000&,PrimaryColour=&HFFFFFF&,Alignment=2,MarginV=85'",
+            "-filter_complex", "[1:a]volume=0.3[a1];[0:a][a1]amix=inputs=2:duration=shortest",
+            "-c:v", "libx264", "-c:a", "aac",
+            "-shortest", output_file
+        ])
+
 
 # === Main pipeline ===
 if __name__ == "__main__":
-    input_video = "sunset_ace.mp4"
-    highlight = "twitch_clip.mp4"
+    # input_video = "sunset_ace.mp4"
+    highlight = "clips/ddg.mp4"
     vertical = "vertical.mp4"
-    bg_music = "bg_music.mp3"
+    bg_music = "music/bg_music.mp3"
+    subs_style = "ass"  # ass or srt
+    final_short = "final_short.mp4"
 
     # start_of_trim = "00:00:20"
     # end_of_trim = "00:00:40"
@@ -167,15 +180,23 @@ if __name__ == "__main__":
     #print("🎬 Trimming clip...")
     #trim_video(input_video, start_of_trim, end_of_trim, highlight)
 
+    # generate subtitles
     print("💬 Generating subtitles...")
-    # generate_subtitles(highlight)
-    generate_bounce_subtitles(highlight)
+    if subs_style == "ass":
+        generate_bounce_subtitles(highlight)
+    else:
+        generate_subtitles(highlight)
 
+    # convert to vertical
     print("📱 Converting to vertical format...")
     convert_to_vertical(highlight, vertical)
 
+    # add effects
     print("🎵 Adding subtitles and music...")
-    # add_effects(vertical, "subs.srt", bg_music, "final_short.mp4")
-    add_effects(vertical, "subs.ass", bg_music, "final_short.mp4")
-
-    print("\n✅ Done! Check your folder for 'final_short.mp4'")
+    if subs_style == "ass":
+        add_effects(vertical, "subs.ass", bg_music, final_short, subs_style)
+    else:
+        add_effects(vertical, "subs.srt", bg_music, final_short, subs_style)
+    
+    # done!
+    print(f"\n✅ Done! Check your folder for '{final_short}'")
